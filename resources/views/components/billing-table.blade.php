@@ -53,28 +53,29 @@
                                     </div>
                                     <div class="mb-2 flex gap-2">
                                         <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('template-penagihan-{{ $invoice->id }}').value);document.getElementById('copy-template-alert-{{ $invoice->id }}').classList.remove('hidden');setTimeout(function(){document.getElementById('copy-template-alert-{{ $invoice->id }}').classList.add('hidden')},1500);" class="bg-blue-600 hover:bg-blue-800 text-white px-2 py-1 rounded text-xs">Copy Template Penagihan</button>
-                                                     <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $customer->phone) }}?text={{ urlencode(
+                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $customer->phone) }}?text={{ urlencode(
      'Yth. Bapak/Ibu '.strtoupper($customer->name)."\n".
      'Username PPPoE: '.$customer->pppoe_username."\n\n".
      'Terima kasih telah menjadi bagian dari pelanggan prioritas kami.'."\n".
-     'Kami informasikan, tagihan layanan Anda tertanggal '.($invoice->invoice_date).' saat ini tercatat dalam status '.ucfirst($invoice->status).'.' . "\n" .
-     'Mohon kesediaannya untuk segera menyelesaikan pembayaran.' . "\n\n" .
+     'Layanan internet anda aktif sampai '.($customer->due_date ? \Carbon\Carbon::parse($customer->due_date)->format('d-m-Y') : '-') . ".\n" .
      '> ⓘ Informasi lengkap dan metode pembayaran tersedia pada link berikut:' . "\n" .
      url('/invoice/'.$invoice->invoice_link) . "\n\n" .
+     'Segera lakukan pembayaran. Jika lewat tanggal pembayaran maka layanan akan dinonaktifkan otomatis. Segera bayar untuk menghindari nonaktif otomatis.' . "\n\n" .
      'Layanan Call Center 085158025553' . "\n\n" .
      'Salam Hangat,' . "\n" .
      'Tim Layanan Pelanggan Rumah Kita Net'
  ) }}" target="_blank" class="bg-green-600 hover:bg-green-800 text-white px-2 py-1 rounded text-xs">Kirim Tagihan</a>
                                     </div>
-                                    <textarea id="template-penagihan-{{ $invoice->id }}" class="w-full border rounded px-2 py-1 text-xs mb-1" rows="8" readonly style="display:none;">Yth. Bapak/Ibu {{ strtoupper($customer->name) }}
+                                    <textarea id="template-penagihan-{{ $invoice->id }}" class="w-full border rounded px-2 py-1 text-xs mb-1" rows="10" readonly style="display:none;">Yth. Bapak/Ibu {{ strtoupper($customer->name) }}
 Username PPPoE: {{ $customer->pppoe_username }}
 
 Terima kasih telah menjadi bagian dari pelanggan prioritas kami.
-Kami informasikan, tagihan layanan Anda tertanggal {{ $invoice->invoice_date }} saat ini tercatat dalam status {{ ucfirst($invoice->status) }}.
-Mohon kesediaannya untuk segera menyelesaikan pembayaran.
+Layanan internet anda aktif sampai {{ $customer->due_date ? \Carbon\Carbon::parse($customer->due_date)->format('d-m-Y') : '-' }}.
 
 > ⓘ Informasi lengkap dan metode pembayaran tersedia pada link berikut:
 {{ url('/invoice/'.$invoice->invoice_link) }}
+
+Segera lakukan pembayaran. Jika lewat tanggal pembayaran maka layanan akan dinonaktifkan otomatis. Segera bayar untuk menghindari nonaktif otomatis.
 
 Layanan Call Center 085158025553
 
