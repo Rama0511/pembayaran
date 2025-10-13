@@ -89,7 +89,12 @@
             </div>
             <div>
                 <label class="block font-medium mb-1">ODP</label>
-                <input type="text" name="odp" value="{{ old('odp', $customer->odp) }}" class="border rounded px-3 py-2 w-full" required />
+                <select name="odp" class="border rounded px-3 py-2 w-full" required>
+                    <option value="">-- Pilih ODP --</option>
+                    @foreach($odps as $odp)
+                        <option value="{{ $odp->nama }}" {{ old('odp', $customer->odp)==$odp->nama ? 'selected' : '' }}>{{ $odp->nama }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -28,6 +28,14 @@
                         <svg class="inline h-5 w-5 mr-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
                         {{ __('Aktivasi Pelanggan') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('pengeluaran.index')" :active="request()->routeIs('pengeluaran.index')">
+                        <svg class="inline h-5 w-5 mr-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-4.41 0-8-1.79-8-4V6c0-2.21 3.59-4 8-4s8 1.79 8 4v8c0 2.21-3.59 4-8 4z"/></svg>
+                        {{ __('Pengeluaran') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('odp.index')" :active="request()->routeIs('odp.index')">
+                        <svg class="inline h-5 w-5 mr-1 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+                        {{ __('Manage ODP') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -79,6 +87,14 @@
     <div :class="{'block': open, 'hidden': ! open}" class="sm:hidden w-full bg-white border-t border-gray-200">
     <div class="pt-2 pb-3 space-y-1 px-2">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            <x-responsive-nav-link :href="route('pengeluaran.index')" :active="request()->routeIs('pengeluaran.index')">
+                <svg class="inline h-5 w-5 mr-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-4.41 0-8-1.79-8-4V6c0-2.21 3.59-4 8-4s8 1.79 8 4v8c0 2.21-3.59 4-8 4z"/></svg>
+                {{ __('Pengeluaran') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('odp.index')" :active="request()->routeIs('odp.index')">
+                <svg class="inline h-5 w-5 mr-1 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+                {{ __('Manage ODP') }}
+            </x-responsive-nav-link>
                 <svg class="inline h-5 w-5 mr-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 8h14v-2H7v2zm0-4h14v-2H7v2zm0-6v2h14V7H7z"/></svg>
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>

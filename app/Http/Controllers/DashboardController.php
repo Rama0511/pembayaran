@@ -44,11 +44,39 @@ class DashboardController extends Controller
             $monthLabels[] = $month->format('M Y');
         }
 
+        // Summary pemasangan bulanan (jumlah pelanggan baru per bulan)
+        $monthlyInstalls = [];
+        $installLabels = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+            $count = \App\Models\Customer::whereBetween('activation_date', [$start, $end])->count();
+            $monthlyInstalls[] = $count;
+            $installLabels[] = $month->format('M Y');
+        }
+
+        // Pelanggan telat bayar: due_date < hari ini dan belum ada invoice status paid bulan ini
+        $today = $now->toDateString();
+        $lateCustomers = \App\Models\Customer::where('due_date', '<', $today)
+            ->whereDoesntHave('invoices', function($q) use ($startOfMonth, $endOfMonth) {
+                $q->where('status', 'paid')->whereBetween('paid_at', [$startOfMonth, $endOfMonth]);
+            })->count();
+
+        // Pelanggan sudah bayar bulan ini: ada invoice status paid bulan ini
+        $paidCustomers = \App\Models\Customer::whereHas('invoices', function($q) use ($startOfMonth, $endOfMonth) {
+            $q->where('status', 'paid')->whereBetween('paid_at', [$startOfMonth, $endOfMonth]);
+        })->count();
+
         return view('dashboard', [
             'thisMonthIncome' => $thisMonthIncome,
             'lastMonthIncome' => $lastMonthIncome,
             'monthlyIncome' => $monthlyIncome,
             'monthLabels' => $monthLabels,
+            'monthlyInstalls' => $monthlyInstalls,
+            'installLabels' => $installLabels,
+            'lateCustomers' => $lateCustomers,
+            'paidCustomers' => $paidCustomers,
         ]);
     }
 }

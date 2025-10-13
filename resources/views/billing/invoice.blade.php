@@ -24,79 +24,82 @@
                 {{ $invoice->tolak_info }}
             </div>
         @endif
-        <!-- Header -->
-        <div class="flex justify-end">
-            <!-- Tombol close hanya dekorasi, tidak ada aksi -->
-            <button class="text-gray-400 hover:text-gray-600 text-xl" tabindex="-1">&times;</button>
+
+        <!-- Logo dan Header -->
+        <div class="flex flex-col items-center mb-4">
+            <img src="{{ asset('logo_baru.png') }}" alt="Logo" class="h-14 w-auto mb-2">
         </div>
 
-        <!-- QR Code -->
-        <div class="flex flex-col items-center">
-            <div class="border rounded-xl p-3">
-                <img src="{{ asset('qr.jpg') }}" alt="QRIS" class="w-48 h-48">
-            </div>
-        </div>
 
-        <!-- Title -->
-        <div class="text-center mt-4">
-            <h2 class="text-lg font-semibold">Selesaikan Pembayaran</h2>
-            <p class="text-sm text-gray-500">
-                Scan atau simpan QRIS untuk melanjutkan pembayaran kamu sebelum jatuh tempo
-            </p>
-            <div class="flex items-center justify-center mt-2 text-orange-500 font-medium">
-                <span class="material-icons mr-1">⏰</span> {{ \Carbon\Carbon::parse($invoice->due_date)->diffForHumans(null, false, false, 2) }}
+        @if($invoice->status !== 'paid')
+            <!-- QR Code -->
+            <div class="flex flex-col items-center">
+                <div class="border rounded-xl p-3">
+                    <img src="{{ asset('qr.jpg') }}" alt="QRIS" class="w-48 h-48">
+                </div>
             </div>
-        </div>
 
-        <!-- Detail Pembayaran -->
-        <div class="bg-gray-100 rounded-xl p-4 mt-5">
-            <div class="flex justify-between text-sm text-gray-500">
-                <span>Detail Pembayaran</span>
+            <!-- Title -->
+            <div class="text-center mt-4">
+                <h2 class="text-lg font-semibold">Selesaikan Pembayaran</h2>
+                <p class="text-sm text-gray-500">
+                    Scan atau simpan QRIS untuk melanjutkan pembayaran kamu sebelum jatuh tempo
+                </p>
+                <div class="flex items-center justify-center mt-2 text-orange-500 font-medium">
+                    <span class="material-icons mr-1">⏰</span> {{ \Carbon\Carbon::parse($invoice->due_date)->diffForHumans(null, false, false, 2) }}
+                </div>
             </div>
-            <div class="flex justify-between mt-2">
-                <span class="font-medium">Nama</span>
-                <span class="font-medium">{{ $invoice->customer->name }}</span>
-            </div>
-            <div class="flex justify-between mt-2">
-                <span class="font-medium">No WA</span>
-                <span class="font-medium">{{ $invoice->customer->phone }}</span>
-            </div>
-            <div class="flex justify-between mt-2">
-                <span class="font-medium">Metode</span>
-                <span class="font-medium">QRIS</span>
-            </div>
-            <div class="flex justify-between mt-2">
-                <span class="font-medium">Total Transaksi</span>
-                <span class="font-bold text-indigo-700">Rp{{ number_format($invoice->amount, 0, ',', '.') }}</span>
-            </div>
-            <div class="flex justify-between mt-2">
-                <span class="font-medium">Status</span>
-                <span class="capitalize">{{ $invoice->status }}</span>
-            </div>
-        </div>
 
-        <!-- Cara Pembayaran -->
-        <div class="mt-5">
-            <h3 class="font-semibold text-sm mb-2">Cara Pembayaran dengan QRIS</h3>
-            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
-                <li>Unduh kode QRIS kamu</li>
-                <li>Buka aplikasi pembayaran (LinkAja, Dana, OVO, GoPay, m-Banking)</li>
-                <li>Upload kode QRIS kamu pada aplikasi pembayaran</li>
-                <li>Setelah melakukan pembayaran kembali ke aplikasi dan tekan tombol konfirmasi</li>
-            </ol>
-        </div>
+            <!-- Detail Pembayaran -->
+            <div class="bg-gray-100 rounded-xl p-4 mt-5">
+                <div class="flex justify-between text-sm text-gray-500">
+                    <span>Detail Pembayaran</span>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="font-medium">Nama</span>
+                    <span class="font-medium">{{ $invoice->customer->name }}</span>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="font-medium">No WA</span>
+                    <span class="font-medium">{{ $invoice->customer->phone }}</span>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="font-medium">Metode</span>
+                    <span class="font-medium">QRIS</span>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="font-medium">Total Transaksi</span>
+                    <span class="font-bold text-indigo-700">Rp{{ number_format($invoice->amount, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="font-medium">Status</span>
+                    <span class="capitalize">{{ $invoice->status }}</span>
+                </div>
+            </div>
 
-        <!-- Tombol -->
-        <div class="mt-6 space-y-3">
-            <a href="{{ asset('qr.jpg') }}" download class="w-full block bg-yellow-400 hover:bg-yellow-500 text-white font-medium py-3 rounded-xl text-center">Unduh QRIS</a>
-            @if($invoice->status === 'unpaid' || ($invoice->tolak_info && $invoice->status !== 'paid'))
-                <!-- Tombol Konfirmasi Pembayaran Aktif -->
-                <button onclick="document.getElementById('modal-konfirmasi').classList.remove('hidden')" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium py-3 rounded-xl">Konfirmasi Pembayaran</button>
-            @elseif($invoice->status === 'menunggu konfirmasi' && $invoice->bukti_pembayaran)
-                <!-- Info Menunggu Konfirmasi Admin -->
-                <div class="w-full bg-blue-100 text-blue-700 font-medium py-3 rounded-xl text-center">Bukti pembayaran sudah diupload, menunggu konfirmasi admin.</div>
-            @endif
-        </div>
+            <!-- Cara Pembayaran -->
+            <div class="mt-5">
+                <h3 class="font-semibold text-sm mb-2">Cara Pembayaran dengan QRIS</h3>
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+                    <li>Unduh kode QRIS kamu</li>
+                    <li>Buka aplikasi pembayaran (LinkAja, Dana, OVO, GoPay, m-Banking)</li>
+                    <li>Upload kode QRIS kamu pada aplikasi pembayaran</li>
+                    <li>Setelah melakukan pembayaran kembali ke aplikasi dan tekan tombol konfirmasi</li>
+                </ol>
+            </div>
+
+            <!-- Tombol -->
+            <div class="mt-6 space-y-3">
+                <a href="{{ asset('qr.jpg') }}" download class="w-full block bg-yellow-400 hover:bg-yellow-500 text-white font-medium py-3 rounded-xl text-center">Unduh QRIS</a>
+                @if($invoice->status === 'unpaid' || ($invoice->tolak_info && $invoice->status !== 'paid'))
+                    <!-- Tombol Konfirmasi Pembayaran Aktif -->
+                    <button onclick="document.getElementById('modal-konfirmasi').classList.remove('hidden')" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium py-3 rounded-xl">Konfirmasi Pembayaran</button>
+                @elseif($invoice->status === 'menunggu konfirmasi' && $invoice->bukti_pembayaran)
+                    <!-- Info Menunggu Konfirmasi Admin -->
+                    <div class="w-full bg-blue-100 text-blue-700 font-medium py-3 rounded-xl text-center">Bukti pembayaran sudah diupload, menunggu konfirmasi admin.</div>
+                @endif
+            </div>
+        @endif
 
         <!-- Modal Konfirmasi Pembayaran -->
         <div id="modal-konfirmasi" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">

@@ -10,13 +10,33 @@ class CustomerController extends Controller
 {
     public function list()
     {
-        $customers = Customer::all();
+        $query = Customer::query();
+        $search = request('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('pppoe_username', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+        $sort = request('sort');
+        if ($sort === 'name_asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('name', 'desc');
+        } elseif ($sort === 'due_asc') {
+            $query->orderBy('due_date', 'asc');
+        } elseif ($sort === 'due_desc') {
+            $query->orderBy('due_date', 'desc');
+        }
+        $customers = $query->get();
         return view('customers.index', compact('customers'));
     }
 
     public function edit(Customer $customer)
     {
-        return view('customers.edit', compact('customer'));
+        $odps = \App\Models\Odp::orderBy('nama')->get();
+        return view('customers.edit', compact('customer', 'odps'));
     }
 
     public function update(Request $request, Customer $customer)
@@ -65,7 +85,8 @@ class CustomerController extends Controller
 
     public function create()
     {
-        return view('customers.create');
+        $odps = \App\Models\Odp::orderBy('nama')->get();
+        return view('customers.create', compact('odps'));
     }
 
     public function store(Request $request)

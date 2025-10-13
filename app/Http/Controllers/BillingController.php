@@ -68,7 +68,26 @@ class BillingController extends Controller
     public function index()
     {
         $today = Carbon::today();
-        $customers = Customer::all();
+        $query = Customer::query();
+        $search = request('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('pppoe_username', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+        $sort = request('sort');
+        if ($sort === 'name_asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('name', 'desc');
+        } elseif ($sort === 'due_asc') {
+            $query->orderBy('due_date', 'asc');
+        } elseif ($sort === 'due_desc') {
+            $query->orderBy('due_date', 'desc');
+        }
+        $customers = $query->get();
 
         $late = $customers->filter(function($c) use ($today) {
             return $c->due_date && Carbon::parse($c->due_date)->lt($today);

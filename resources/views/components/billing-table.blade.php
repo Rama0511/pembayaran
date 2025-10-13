@@ -5,6 +5,7 @@
         <tr>
             <th class="px-4 py-2">No</th>
             <th class="px-4 py-2">Nama</th>
+            <th class="px-4 py-2">PPPoE</th>
             <th class="px-4 py-2">No WA</th>
             <th class="px-4 py-2">Jatuh Tempo</th>
             <th class="px-4 py-2">Status</th>
@@ -20,6 +21,7 @@
             <tr>
                 <td class="px-4 py-2">{{ $i+1 }}</td>
                 <td class="px-4 py-2">{{ $customer->name }}</td>
+                <td class="px-4 py-2">{{ $customer->pppoe_username }}</td>
                 <td class="px-4 py-2">{{ $customer->phone }}</td>
                 <td class="px-4 py-2">{{ $customer->due_date ? \Carbon\Carbon::parse($customer->due_date)->format('d-m-Y') : '-' }}</td>
                 <td class="px-4 py-2">

@@ -11,12 +11,24 @@
             {{ session('success') }}
         </div>
     @endif
+    <form method="GET" action="" class="mb-4 flex flex-col sm:flex-row gap-2 sm:items-center">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, PPPoE, atau No WA..." class="border rounded px-2 py-1 w-full sm:w-64 text-xs sm:text-sm" />
+        <select name="sort" class="border rounded px-2 py-1 text-xs sm:text-sm">
+            <option value="">Urutkan...</option>
+            <option value="name_asc" {{ request('sort')=='name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+            <option value="name_desc" {{ request('sort')=='name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+            <option value="due_asc" {{ request('sort')=='due_asc' ? 'selected' : '' }}>Jatuh Tempo Terdekat</option>
+            <option value="due_desc" {{ request('sort')=='due_desc' ? 'selected' : '' }}>Jatuh Tempo Terjauh</option>
+        </select>
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">Cari/Urutkan</button>
+    </form>
     <div class="overflow-x-auto">
         <table class="min-w-full bg-white border rounded shadow text-xs sm:text-sm">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="px-4 py-2">No</th>
                     <th class="px-4 py-2">Nama</th>
+                    <th class="px-4 py-2">PPPoE</th>
                     <th class="px-4 py-2">No WA</th>
                     <th class="px-4 py-2">Aktif Sampai</th>
                     <th class="px-4 py-2">Action</th>
@@ -41,6 +53,7 @@
                     <tr>
                         <td class="px-4 py-2">{{ $i+1 }}</td>
                         <td class="px-4 py-2">{{ $customer->name }}</td>
+                        <td class="px-4 py-2">{{ $customer->pppoe_username }}</td>
                         <td class="px-4 py-2">{{ $customer->phone }}</td>
                         <td class="px-4 py-2">
                             <span class="px-2 py-1 rounded {{ $color }}">
@@ -58,6 +71,7 @@
                             >Lihat Detail</button>
                             <a href="{{ route('customers.edit', $customer->id) }}" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">Edit</a>
                             <a href="{{ route('customers.riwayat', $customer->id) }}" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs">Riwayat Pembayaran</a>
+                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $customer->phone) }}" target="_blank" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">Hubungi</a>
                             <button type="button" class="bg-red-600 hover:bg-red-800 text-white px-3 py-1 rounded text-xs delete-btn" data-id="{{ $customer->id }}" data-name="{{ $customer->name }}">Hapus</button>
                         </td>
 <!-- Modal Konfirmasi Hapus -->
