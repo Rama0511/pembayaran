@@ -28,6 +28,14 @@ class CustomerController extends Controller
             $query->orderBy('due_date', 'asc');
         } elseif ($sort === 'due_desc') {
             $query->orderBy('due_date', 'desc');
+        } elseif ($sort === 'pppoe_asc') {
+            $query->orderBy('pppoe_username', 'asc');
+        } elseif ($sort === 'pppoe_desc') {
+            $query->orderBy('pppoe_username', 'desc');
+        } elseif ($sort === 'wa_asc') {
+            $query->orderBy('phone', 'asc');
+        } elseif ($sort === 'wa_desc') {
+            $query->orderBy('phone', 'desc');
         }
         $customers = $query->get();
         return view('customers.index', compact('customers'));

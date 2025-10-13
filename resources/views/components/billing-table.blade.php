@@ -4,10 +4,46 @@
     <thead class="bg-gray-50">
         <tr>
             <th class="px-4 py-2">No</th>
-            <th class="px-4 py-2">Nama</th>
-            <th class="px-4 py-2">PPPoE</th>
-            <th class="px-4 py-2">No WA</th>
-            <th class="px-4 py-2">Jatuh Tempo</th>
+            <th class="px-4 py-2">
+                <a href="?sort={{ request('sort')=='name_asc' ? 'name_desc' : 'name_asc' }}{{ request('search') ? '&search='.urlencode(request('search')) : '' }}" class="hover:underline flex items-center gap-1">
+                    Nama
+                    @if(request('sort')=='name_asc')
+                        <span>&uarr;</span>
+                    @elseif(request('sort')=='name_desc')
+                        <span>&darr;</span>
+                    @endif
+                </a>
+            </th>
+            <th class="px-4 py-2">
+                <a href="?sort={{ request('sort')=='pppoe_asc' ? 'pppoe_desc' : 'pppoe_asc' }}{{ request('search') ? '&search='.urlencode(request('search')) : '' }}" class="hover:underline flex items-center gap-1">
+                    PPPoE
+                    @if(request('sort')=='pppoe_asc')
+                        <span>&uarr;</span>
+                    @elseif(request('sort')=='pppoe_desc')
+                        <span>&darr;</span>
+                    @endif
+                </a>
+            </th>
+            <th class="px-4 py-2">
+                <a href="?sort={{ request('sort')=='wa_asc' ? 'wa_desc' : 'wa_asc' }}{{ request('search') ? '&search='.urlencode(request('search')) : '' }}" class="hover:underline flex items-center gap-1">
+                    No WA
+                    @if(request('sort')=='wa_asc')
+                        <span>&uarr;</span>
+                    @elseif(request('sort')=='wa_desc')
+                        <span>&darr;</span>
+                    @endif
+                </a>
+            </th>
+            <th class="px-4 py-2">
+                <a href="?sort={{ request('sort')=='due_asc' ? 'due_desc' : 'due_asc' }}{{ request('search') ? '&search='.urlencode(request('search')) : '' }}" class="hover:underline flex items-center gap-1">
+                    Jatuh Tempo
+                    @if(request('sort')=='due_asc')
+                        <span>&uarr;</span>
+                    @elseif(request('sort')=='due_desc')
+                        <span>&darr;</span>
+                    @endif
+                </a>
+            </th>
             <th class="px-4 py-2">Status</th>
             <th class="px-4 py-2">Action</th>
         </tr>
