@@ -94,6 +94,12 @@ class CustomerController extends Controller
             }
         }
 
+        // Auto-calculate due_date = activation_date + 30 days (only if activation_date changed and due_date not provided)
+        if (!empty($validated['activation_date']) && empty($validated['due_date'])) {
+            $activationDate = \Carbon\Carbon::parse($validated['activation_date']);
+            $validated['due_date'] = $activationDate->addDays(30)->format('Y-m-d');
+        }
+
         $customer->update($validated);
         
         if ($request->wantsJson()) {
@@ -159,6 +165,13 @@ class CustomerController extends Controller
         }
 
         $validated['is_active'] = $validated['is_active'] ?? true;
+        
+        // Auto-calculate due_date = activation_date + 30 days
+        if (!empty($validated['activation_date']) && empty($validated['due_date'])) {
+            $activationDate = \Carbon\Carbon::parse($validated['activation_date']);
+            $validated['due_date'] = $activationDate->addDays(30)->format('Y-m-d');
+        }
+        
         $customer = Customer::create($validated);
         
         if ($request->wantsJson()) {

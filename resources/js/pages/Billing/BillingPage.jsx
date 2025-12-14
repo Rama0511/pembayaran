@@ -48,14 +48,17 @@ function BillingPage() {
 
     const handleCreateInvoice = async (e) => {
         e.preventDefault();
-        if (!amount || amount <= 0) {
+        // Parse amount untuk mendapatkan angka murni (hapus semua titik/koma)
+        const numericAmount = amount ? parseInt(amount.toString().replace(/[^\d]/g, ''), 10) : 0;
+        
+        if (!numericAmount || numericAmount <= 0) {
             setError('Nominal tagihan harus diisi');
             return;
         }
         
         try {
             setSubmitting(true);
-            const response = await billingService.createInvoice(createModal.customer.id, amount);
+            const response = await billingService.createInvoice(createModal.customer.id, numericAmount);
             setCreateModal({ open: false, customer: null });
             setAmount('');
             setResultModal({ open: true, data: response.data.data });
@@ -71,7 +74,9 @@ function BillingPage() {
         e.preventDefault();
         try {
             setSubmitting(true);
-            await billingService.confirmPayment(confirmModal.invoice.id, paidAmount || confirmModal.invoice.amount);
+            // Parse paidAmount untuk mendapatkan angka murni (hapus semua titik/koma)
+            const numericAmount = paidAmount ? parseInt(paidAmount.toString().replace(/[^\d]/g, ''), 10) : confirmModal.invoice.amount;
+            await billingService.confirmPayment(confirmModal.invoice.id, numericAmount);
             setConfirmModal({ open: false, invoice: null, customer: null });
             setPaidAmount('');
             setSuccess('Pembayaran berhasil dikonfirmasi');
@@ -112,6 +117,33 @@ function BillingPage() {
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+    };
+
+    // Format angka dengan separator ribuan (titik untuk Indonesia)
+    const formatNumberWithComma = (value) => {
+        if (!value && value !== 0) return '';
+        // Konversi ke number dulu untuk handle decimal dari database (misal 200000.00)
+        let numericValue = parseFloat(value);
+        if (isNaN(numericValue)) return '';
+        // Bulatkan ke integer (hapus desimal)
+        numericValue = Math.round(numericValue);
+        // Format dengan locale Indonesia (menggunakan titik sebagai pemisah ribuan)
+        return new Intl.NumberFormat('id-ID').format(numericValue);
+    };
+
+    // Parse angka dari format dengan titik kembali ke number string
+    const parseFormattedNumber = (value) => {
+        if (!value) return '';
+        // Konversi ke number dulu untuk handle decimal
+        const num = parseFloat(value);
+        if (isNaN(num)) return value.toString().replace(/[^\d]/g, '');
+        return Math.round(num).toString();
+    };
+
+    // Handler untuk input dengan format
+    const handleAmountChange = (e, setter) => {
+        const rawValue = e.target.value.replace(/[^\d]/g, '');
+        setter(rawValue);
     };
 
     const generateTemplate = (customer, invoice) => {
@@ -265,7 +297,9 @@ Tim Layanan Pelanggan Rumah Kita Net`;
                                             variant="warning"
                                             onClick={() => {
                                                 setConfirmModal({ open: true, invoice, customer });
-                                                setPaidAmount(invoice.amount);
+                                                // Parse amount dari invoice (handle decimal dari database)
+                                                const amount = parseFloat(invoice.amount);
+                                                setPaidAmount(isNaN(amount) ? '' : Math.round(amount).toString());
                                             }}
                                         >
                                             <Check size={14} className="mr-1" />
@@ -372,14 +406,14 @@ Tim Layanan Pelanggan Rumah Kita Net`;
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nominal (Rp)</label>
                             <input
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                min="1"
+                                type="text"
+                                value={formatNumberWithComma(amount)}
+                                onChange={(e) => handleAmountChange(e, setAmount)}
                                 required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="Masukkan nominal tagihan"
                             />
+                            {amount && <p className="text-xs text-gray-500 mt-1">Rp {formatNumberWithComma(amount)}</p>}
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="secondary" onClick={() => setCreateModal({ open: false, customer: null })}>
@@ -473,14 +507,13 @@ Tim Layanan Pelanggan Rumah Kita Net`;
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nominal Dibayarkan</label>
                             <input
-                                type="number"
-                                value={paidAmount}
-                                onChange={(e) => setPaidAmount(e.target.value)}
-                                min="1"
+                                type="text"
+                                value={formatNumberWithComma(paidAmount)}
+                                onChange={(e) => handleAmountChange(e, setPaidAmount)}
                                 required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Nominal default sesuai invoice, bisa diubah jika pembayaran berbeda.</p>
+                            <p className="text-xs text-gray-500 mt-1">Rp {formatNumberWithComma(paidAmount)} - Nominal default sesuai invoice, bisa diubah jika pembayaran berbeda.</p>
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="secondary" onClick={() => setConfirmModal({ open: false, invoice: null, customer: null })}>

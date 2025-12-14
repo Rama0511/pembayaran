@@ -105,6 +105,20 @@ function CustomerForm() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        
+        // Auto-calculate due_date when activation_date changes (+30 days)
+        if (name === 'activation_date' && value) {
+            const activationDate = new Date(value);
+            activationDate.setDate(activationDate.getDate() + 30);
+            const dueDate = activationDate.toISOString().split('T')[0];
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+                due_date: dueDate,
+            }));
+            return;
+        }
+        
         setFormData((prev) => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value,
@@ -342,11 +356,10 @@ function CustomerForm() {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="">Pilih Paket</option>
-                                <option value="10 Mbps">10 Mbps</option>
-                                <option value="20 Mbps">20 Mbps</option>
-                                <option value="30 Mbps">30 Mbps</option>
-                                <option value="50 Mbps">50 Mbps</option>
-                                <option value="100 Mbps">100 Mbps</option>
+                                <option value="Paket 150k">Paket 150k</option>
+                                <option value="Paket 175k">Paket 175k</option>
+                                <option value="Paket 200k">Paket 200k</option>
+                                <option value="Paket 250k">Paket 250k</option>
                                 <option value="Custom">Custom</option>
                             </select>
                         </div>
@@ -390,8 +403,8 @@ function CustomerForm() {
                             >
                                 <option value="">Pilih ODP</option>
                                 {odpList.map((odp) => (
-                                    <option key={odp.id} value={odp.name}>
-                                        {odp.name} - {odp.location}
+                                    <option key={odp.id} value={odp.nama}>
+                                        {odp.nama} {odp.rasio_distribusi ? `(${odp.rasio_distribusi})` : ''}
                                     </option>
                                 ))}
                             </select>
@@ -420,21 +433,7 @@ function CustomerForm() {
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Tanggal Jatuh Tempo (tanggal)
-                            </label>
-                            <input
-                                type="number"
-                                name="due_date"
-                                min="1"
-                                max="31"
-                                value={formData.due_date}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Contoh: 10 (setiap tanggal 10)"
-                            />
+                            <p className="text-xs text-gray-500 mt-1">Tanggal jatuh tempo otomatis +30 hari dari tanggal aktivasi</p>
                         </div>
                     </div>
                 </div>
