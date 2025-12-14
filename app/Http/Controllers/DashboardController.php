@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 
 use App\Models\Invoice;
+use App\Models\Complaint;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -77,6 +78,74 @@ class DashboardController extends Controller
             'installLabels' => $installLabels,
             'lateCustomers' => $lateCustomers,
             'paidCustomers' => $paidCustomers,
+        ]);
+    }
+
+    public function api()
+    {
+        // Ringkasan pendapatan bulan ini
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+
+        $monthlyRevenue = \App\Models\Invoice::whereBetween('paid_at', [$startOfMonth, $endOfMonth])
+            ->where('status', 'paid')
+            ->sum('amount');
+
+        $totalCustomers = \App\Models\Customer::count();
+        
+        // Pelanggan Aktif = yang sudah membayar bulan ini
+        $activeCustomers = \App\Models\Customer::whereHas('invoices', function($q) use ($startOfMonth, $endOfMonth) {
+            $q->where('status', 'paid')->whereBetween('paid_at', [$startOfMonth, $endOfMonth]);
+        })->count();
+        
+        $today = $now->toDateString();
+        $pendingInvoices = \App\Models\Invoice::where('status', '!=', 'paid')
+            ->where('due_date', '<', $today)
+            ->count();
+
+        $recentCustomers = \App\Models\Customer::latest()->take(5)->get(['id', 'name', 'email', 'is_active']);
+
+        // Revenue untuk 6 bulan terakhir
+        $revenueByMonth = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+            $revenue = \App\Models\Invoice::whereBetween('paid_at', [$start, $end])
+                ->where('status', 'paid')
+                ->sum('amount');
+            $revenueByMonth[] = (int) $revenue;
+        }
+
+        // Pemasangan baru untuk 6 bulan terakhir
+        $newInstallations = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+            $count = \App\Models\Customer::whereBetween('activation_date', [$start, $end])->count();
+            $newInstallations[] = (int) $count;
+        }
+
+        // Complaint statistics
+        $pendingComplaints = Complaint::where('status', 'pending')->count();
+        $inProgressComplaints = Complaint::where('status', 'in_progress')->count();
+        $totalActiveComplaints = $pendingComplaints + $inProgressComplaints;
+
+        return response()->json([
+            'data' => [
+                'total_customers' => $totalCustomers,
+                'active_customers' => $activeCustomers,
+                'monthly_revenue' => $monthlyRevenue,
+                'pending_invoices' => $pendingInvoices,
+                'recent_customers' => $recentCustomers,
+                'revenue_by_month' => $revenueByMonth,
+                'new_installations' => $newInstallations,
+                'pending_complaints' => $pendingComplaints,
+                'in_progress_complaints' => $inProgressComplaints,
+                'total_active_complaints' => $totalActiveComplaints,
+            ]
         ]);
     }
 }

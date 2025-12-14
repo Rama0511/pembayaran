@@ -124,6 +124,9 @@ class BillingController extends Controller
         $customer = Customer::findOrFail($customerId);
         $amount = request()->input('amount');
         if (!$amount || $amount <= 0) {
+            if (request()->wantsJson()) {
+                return response()->json(['error' => 'Nominal tagihan harus diisi.'], 422);
+            }
             return redirect()->back()->with('error', 'Nominal tagihan harus diisi.');
         }
         $invoice = $customer->invoices()->create([
@@ -135,6 +138,28 @@ class BillingController extends Controller
         ]);
 
         // TODO: Kirim link invoice ke pelanggan jika perlu
+
+        if (request()->wantsJson()) {
+            $link = url('/invoice/'.$invoice->invoice_link);
+            $template = "Yth. Bapak/Ibu " . strtoupper($customer->name) . "\n" .
+                        "Username PPPoE: " . $customer->pppoe_username . "\n\n" .
+                        "Nominal tagihan: Rp " . number_format($invoice->amount, 0, ',', '.') . "\n" .
+                        "> ⓘ Informasi lengkap dan metode pembayaran tersedia pada link berikut:" . "\n" .
+                        $link . "\n\n" .
+                        "Segera lakukan pembayaran. Jika lewat tanggal pembayaran maka layanan akan dinonaktifkan otomatis. Segera bayar untuk menghindari nonaktif otomatis." . "\n\n" .
+                        "Layanan Call Center 085158025553" . "\n\n" .
+                        "Salam Hangat," . "\n" .
+                        "Tim Layanan Pelanggan Rumah Kita Net";
+
+            return response()->json([
+                'data' => [
+                    'invoice_id' => $invoice->id,
+                    'invoice_link' => $link,
+                    'template' => $template,
+                    'amount' => $invoice->amount,
+                ]
+            ]);
+        }
 
         return redirect()->route('billing.index')->with('success', 'Tagihan berhasil dibuat.');
     }
@@ -156,5 +181,116 @@ class BillingController extends Controller
             return redirect()->route('billing.index')->with('error', 'Bukti pembayaran ditolak.');
         }
         return redirect()->route('invoice.show', $invoice->invoice_link)->with('error', 'Bukti pembayaran ditolak. Silakan upload ulang bukti pembayaran yang valid.');
+    }
+
+    // API Methods for React
+    public function apiIndex()
+    {
+        $today = Carbon::today();
+        $query = Customer::query();
+        
+        $search = request('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('pppoe_username', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+        
+        $customers = $query->get();
+        $currentMonth = $today->format('Y-m');
+
+        // Get invoices for current month
+        $invoicesThisMonth = [];
+        foreach ($customers as $customer) {
+            $invoice = $customer->invoices()
+                ->whereRaw("DATE_FORMAT(invoice_date, '%Y-%m') = ?", [$currentMonth])
+                ->latest('invoice_date')->first();
+            $invoicesThisMonth[$customer->id] = $invoice;
+        }
+
+        // Categorize customers
+        $late = [];
+        $almostLate = [];
+        $others = [];
+        $paid = [];
+
+        foreach ($customers as $customer) {
+            $invoice = $invoicesThisMonth[$customer->id] ?? null;
+            $item = ['customer' => $customer, 'invoice' => $invoice];
+            
+            if ($invoice && $invoice->status === 'paid') {
+                $paid[] = $item;
+                continue;
+            }
+
+            if ($customer->due_date && Carbon::parse($customer->due_date)->lt($today)) {
+                $late[] = $item;
+            } elseif ($customer->due_date && Carbon::parse($customer->due_date)->gte($today) && Carbon::parse($customer->due_date)->lte($today->copy()->addDays(7))) {
+                $almostLate[] = $item;
+            } else {
+                $others[] = $item;
+            }
+        }
+
+        return response()->json([
+            'data' => [
+                'late' => $late,
+                'almostLate' => $almostLate,
+                'others' => $others,
+                'paid' => $paid,
+            ]
+        ]);
+    }
+
+    public function showInvoiceApi($invoice_link)
+    {
+        $invoice = \App\Models\Invoice::where('invoice_link', $invoice_link)->with('customer')->firstOrFail();
+        return response()->json(['data' => $invoice]);
+    }
+
+    public function confirmPaymentApi($invoiceId)
+    {
+        $invoice = \App\Models\Invoice::findOrFail($invoiceId);
+        $paidAmount = request()->input('paid_amount');
+        
+        if ($paidAmount && $paidAmount > 0) {
+            $invoice->amount = $paidAmount;
+        }
+
+        $invoice->status = 'paid';
+        $invoice->paid_at = now();
+        $invoice->tolak_info = null;
+
+        // Update due_date customer
+        $customer = $invoice->customer;
+        if ($customer && $invoice->due_date) {
+            $oldDue = \Carbon\Carbon::parse($invoice->due_date);
+            $customer->due_date = $oldDue->copy()->addDays(30);
+            $customer->save();
+        }
+
+        $invoice->save();
+
+        return response()->json(['message' => 'Pembayaran berhasil dikonfirmasi', 'data' => $invoice]);
+    }
+
+    public function rejectPaymentApi($invoiceId)
+    {
+        $invoice = \App\Models\Invoice::findOrFail($invoiceId);
+        $reason = request()->input('reason') ?: 'Bukti pembayaran Anda ditolak. Silakan upload ulang bukti pembayaran yang valid.';
+        
+        if ($invoice->bukti_pembayaran) {
+            Storage::disk('public')->delete($invoice->bukti_pembayaran);
+            $invoice->bukti_pembayaran = null;
+        }
+        
+        $invoice->status = 'unpaid';
+        $invoice->paid_at = null;
+        $invoice->tolak_info = $reason;
+        $invoice->save();
+
+        return response()->json(['message' => 'Pembayaran ditolak', 'data' => $invoice]);
     }
 }

@@ -69,13 +69,18 @@
                 </td>
                 <td class="px-4 py-2">
                     @if(!$invoice)
-                        <form method="POST" action="{{ route('billing.create-invoice', $customer->id) }}" class="flex gap-2 items-center">
-                            @csrf
-                            <input type="number" name="amount" min="1" required placeholder="Nominal" class="border rounded px-2 py-1 w-20 sm:w-24 text-xs sm:text-sm" />
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">
+                        <div>
+                            <button type="button"
+                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded create-invoice-btn"
+                                data-customer-id="{{ $customer->id }}"
+                                data-customer-name="{{ htmlspecialchars($customer->name, ENT_QUOTES) }}"
+                                data-pppoe="{{ $customer->pppoe_username }}"
+                                data-package="{{ $customer->package_type ?? $customer->custom_package ?? '' }}"
+                                data-phone="{{ preg_replace('/[^0-9]/','',$customer->phone) }}"
+                            >
                                 Buat Tagihan
                             </button>
-                        </form>
+                        </div>
                     @else
                         <div class="flex flex-col gap-1">
                             <button type="button" onclick="document.getElementById('modal-copy-{{ $invoice->id }}').classList.remove('hidden')" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded">
@@ -190,6 +195,123 @@ Tim Layanan Pelanggan Rumah Kita Net
     </tbody>
 </table>
 </div>
+
+<!-- Create Invoice Modal (single shared) -->
+<div id="create-invoice-modal" class="fixed z-50 inset-0 flex justify-center items-center bg-black bg-opacity-40 px-2 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-2">Buat Tagihan</h3>
+        <div id="create-invoice-info" class="mb-3 text-sm text-gray-700">
+            <!-- populated by JS -->
+        </div>
+        <form id="create-invoice-form" class="space-y-4">
+            @csrf
+            <input type="hidden" name="_token" value="{{ csrf_token() }}" />
+            <input type="hidden" id="ci-customer-id" name="customer_id" />
+            <div>
+                <label class="block font-medium mb-1">Nominal (Rp)</label>
+                <input id="ci-amount" type="number" name="amount" min="1" required class="border rounded px-2 py-2 w-full text-xs sm:text-sm" />
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" id="ci-cancel" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+                <button type="submit" id="ci-confirm" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-800">Konfirmasi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div id="invoice-result-modal" class="fixed z-50 inset-0 flex justify-center items-center bg-black bg-opacity-40 px-2 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-2">Tagihan Dibuat</h3>
+        <div class="mb-3 text-sm text-gray-700">
+            <div>Link: <input id="result-link" type="text" readonly class="w-full border rounded px-2 py-1 text-sm" /></div>
+        </div>
+        <div class="mb-2 flex gap-2">
+            <button id="result-copy-link" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">Copy Link</button>
+            <button id="result-copy-template" class="bg-indigo-600 hover:bg-indigo-800 text-white px-3 py-1 rounded text-xs">Copy Template</button>
+            <a id="result-wa" href="#" target="_blank" class="ml-auto bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded text-xs">Kirim via WhatsApp</a>
+        </div>
+        <textarea id="result-template" class="w-full border rounded px-2 py-1 text-xs mb-2" rows="8" readonly></textarea>
+        <div class="flex justify-end">
+            <button id="result-close" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Open create modal
+    document.querySelectorAll('.create-invoice-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            const id = this.dataset.customerId;
+            const name = this.dataset.customerName;
+            const pppoe = this.dataset.pppoe;
+            const pkg = this.dataset.package;
+            const phone = this.dataset.phone;
+            document.getElementById('ci-customer-id').value = id;
+            document.getElementById('ci-amount').value = '';
+            document.getElementById('create-invoice-info').innerHTML = `<div class="mb-2"><strong>${name}</strong></div><div class="text-xs text-gray-600">PPPoE: ${pppoe || '-'}<br/>Paket: ${pkg || '-'}</div>`;
+            // store phone for later use
+            document.getElementById('create-invoice-modal').dataset.phone = phone;
+            document.getElementById('create-invoice-modal').classList.remove('hidden');
+        });
+    });
+
+    // Cancel
+    document.getElementById('ci-cancel').addEventListener('click', function(){
+        document.getElementById('create-invoice-modal').classList.add('hidden');
+    });
+
+    // Submit via AJAX
+    document.getElementById('create-invoice-form').addEventListener('submit', async function(e){
+        e.preventDefault();
+        const customerId = document.getElementById('ci-customer-id').value;
+        const amount = document.getElementById('ci-amount').value;
+        const token = document.querySelector('input[name="_token"]').value;
+        const url = `/penagihan/${customerId}/buat-tagihan`;
+        try{
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ amount: amount })
+            });
+            const data = await res.json();
+            if (!res.ok) throw data;
+            // show result modal
+            document.getElementById('create-invoice-modal').classList.add('hidden');
+            document.getElementById('invoice-result-modal').classList.remove('hidden');
+            document.getElementById('result-link').value = data.data.invoice_link;
+            document.getElementById('result-template').value = data.data.template;
+            // set wa link
+            const phone = document.getElementById('create-invoice-modal').dataset.phone || '';
+            const waText = encodeURIComponent(data.data.template + '\n' + data.data.invoice_link);
+            document.getElementById('result-wa').href = `https://wa.me/${phone}?text=${waText}`;
+        }catch(err){
+            alert((err && err.error) ? err.error : 'Gagal membuat tagihan');
+            console.error(err);
+        }
+    });
+
+    // result actions
+    document.getElementById('result-copy-link').addEventListener('click', function(){
+        navigator.clipboard.writeText(document.getElementById('result-link').value);
+        this.innerText = 'Copied';
+        setTimeout(()=> this.innerText = 'Copy Link', 1500);
+    });
+    document.getElementById('result-copy-template').addEventListener('click', function(){
+        navigator.clipboard.writeText(document.getElementById('result-template').value);
+        this.innerText = 'Copied';
+        setTimeout(()=> this.innerText = 'Copy Template', 1500);
+    });
+    document.getElementById('result-close').addEventListener('click', function(){
+        document.getElementById('invoice-result-modal').classList.add('hidden');
+    });
+});
+</script>
 
 <!-- Tabel pelanggan yang sudah bayar -->
 @php $paidCustomers = $customers->filter(function($c) use ($invoicesThisMonth) {

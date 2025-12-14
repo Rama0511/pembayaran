@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="user-name" content="{{ Auth::user()?->name ?? 'User' }}">
 
     <title>@yield('title', (isset($pageTitle) ? $pageTitle : (isset($header) ? strip_tags($header) : config('app.name', 'Laravel'))))</title>
 
@@ -12,9 +13,16 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/main.jsx'])
     </head>
     <body class="font-sans antialiased bg-gray-100">
+        <script>
+            // Set username to localStorage for React to read
+            window.appUser = "{{ Auth::user()?->name ?? 'User' }}";
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('appUserName', "{{ Auth::user()?->name ?? 'User' }}");
+            }
+        </script>
         <div class="min-h-screen flex flex-col">
             @if(!(isset($hideNavbar) && $hideNavbar))
                 @include('layouts.navigation')

@@ -55,4 +55,62 @@ class OdpController extends Controller
         $odp->load('customers');
         return view('odp.show', compact('odp'));
     }
+
+    // API Methods for React
+    public function apiIndex()
+    {
+        $odps = Odp::withCount(['customers'])->get();
+        return response()->json(['data' => $odps]);
+    }
+
+    public function apiStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nama' => 'required|string|unique:odps,nama',
+            'rasio_spesial' => 'nullable|string',
+            'rasio_distribusi' => 'required|in:1:2,1:4,1:8,1:16',
+            'foto' => 'nullable|image|max:2048',
+        ]);
+        
+        if ($request->hasFile('foto')) {
+            $validated['foto'] = $request->file('foto')->store('uploads/odp', 'public');
+        }
+        
+        $odp = Odp::create($validated);
+        return response()->json(['data' => $odp, 'message' => 'ODP berhasil ditambahkan'], 201);
+    }
+
+    public function apiShow(Odp $odp)
+    {
+        $odp->load('customers');
+        $odp->loadCount('customers');
+        return response()->json(['data' => $odp]);
+    }
+
+    public function apiUpdate(Request $request, Odp $odp)
+    {
+        $validated = $request->validate([
+            'nama' => 'required|string|unique:odps,nama,' . $odp->id,
+            'rasio_spesial' => 'nullable|string',
+            'rasio_distribusi' => 'required|in:1:2,1:4,1:8,1:16',
+            'foto' => 'nullable|image|max:2048',
+        ]);
+        
+        if ($request->hasFile('foto')) {
+            if ($odp->foto) Storage::disk('public')->delete($odp->foto);
+            $validated['foto'] = $request->file('foto')->store('uploads/odp', 'public');
+        }
+        
+        $odp->update($validated);
+        return response()->json(['data' => $odp, 'message' => 'ODP berhasil diupdate']);
+    }
+
+    public function apiDestroy(Odp $odp)
+    {
+        if ($odp->foto) {
+            Storage::disk('public')->delete($odp->foto);
+        }
+        $odp->delete();
+        return response()->json(['message' => 'ODP berhasil dihapus']);
+    }
 }

@@ -14,21 +14,30 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create()
     {
-        return view('auth.login');
+        // Return React app for SPA
+        return view('app');
     }
 
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => 'Login successful',
+                'user' => $request->user(),
+                'redirect' => '/dashboard'
+            ]);
+        }
+
+        return redirect()->intended('/dashboard');
     }
 
     /**
