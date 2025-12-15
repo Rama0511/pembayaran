@@ -25,6 +25,11 @@ Route::get('/status-jaringan', function () {
     return view('app');
 })->name('network.status');
 
+// Invoice Page (Public - tanpa login, untuk pelanggan bayar tagihan)
+Route::get('/invoice/{invoice_link}', function () {
+    return view('app');
+})->name('invoice.show');
+
 // Route publik untuk akses invoice tanpa login
 Route::get('/api/invoice/{invoice_link}', [BillingController::class, 'showInvoiceApi'])->name('api.invoice.show');
 Route::post('/invoice/{invoice}/konfirmasi', [\App\Http\Controllers\BillingController::class, 'confirmPayment'])->name('invoice.confirm-payment');
